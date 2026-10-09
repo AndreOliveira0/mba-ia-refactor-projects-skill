@@ -1,10 +1,20 @@
 from datetime import datetime
+import logging
 import re
 import os
 import json
 import sys
 import math
 import hashlib
+
+from utils.validators import (
+    is_valid_email,
+    is_valid_task_priority,
+    is_valid_task_status,
+    task_title_error,
+)
+
+logger = logging.getLogger(__name__)
 
 def format_date(date_obj):
     if date_obj:
@@ -17,10 +27,7 @@ def calculate_percentage(part, total):
     return round((part / total) * 100, 2)
 
 def validate_email(email):
-
-    if re.match(r'^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$', email):
-        return True
-    return False
+    return is_valid_email(email)
 
 def sanitize_string(s):
 
@@ -34,19 +41,17 @@ def generate_id():
     return str(uuid.uuid4())
 
 def log_action(action, details=None):
-
-    timestamp = datetime.utcnow()
-    print(f"[{timestamp}] ACTION: {action}")
+    logger.info('ACTION: %s', action)
     if details:
-        print(f"  DETAILS: {details}")
+        logger.info('DETAILS: %s', details)
 
 def parse_date(date_string):
     try:
         return datetime.strptime(date_string, '%Y-%m-%d')
-    except:
+    except (TypeError, ValueError):
         try:
             return datetime.strptime(date_string, '%d/%m/%Y')
-        except:
+        except (TypeError, ValueError):
             return None
 
 def is_valid_color(color):
@@ -59,21 +64,20 @@ def process_task_data(data, existing_task=None):
 
     if 'title' in data:
         title = data['title']
-        if title:
-            title = title.strip()
-            if len(title) >= 3 and len(title) <= 200:
-                result['title'] = title
-            else:
-                return None, 'Título deve ter entre 3 e 200 caracteres'
-        else:
+        if not title:
             return None, 'Título não pode ser vazio'
+        if not isinstance(title, str):
+            return None, 'Título inválido'
+        title = title.strip()
+        if task_title_error(title):
+            return None, 'Título deve ter entre 3 e 200 caracteres'
+        result['title'] = title
 
     if 'description' in data:
         result['description'] = data['description']
 
     if 'status' in data:
-        valid_statuses = ['pending', 'in_progress', 'done', 'cancelled']
-        if data['status'] in valid_statuses:
+        if is_valid_task_status(data['status']):
             result['status'] = data['status']
         else:
             return None, 'Status inválido'
@@ -81,11 +85,11 @@ def process_task_data(data, existing_task=None):
     if 'priority' in data:
         try:
             p = int(data['priority'])
-            if p >= 1 and p <= 5:
+            if is_valid_task_priority(p):
                 result['priority'] = p
             else:
                 return None, 'Prioridade deve ser entre 1 e 5'
-        except:
+        except (TypeError, ValueError):
             return None, 'Prioridade inválida'
 
     if 'due_date' in data:
