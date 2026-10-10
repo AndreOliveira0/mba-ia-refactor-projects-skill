@@ -24,7 +24,9 @@ Antes do desenvolvimento da Skill automatizada, realizou-se a inspeção manual 
 | **HIGH** | Modo Debug ativado em produção | `app.py:8, 88` | `DEBUG = True` habilitado por padrão em ambiente configurado como produção. |
 | **MEDIUM** | God Module com responsabilidades misturadas | `controllers.py:1-292` | Arquivo centraliza parsing HTTP, validação, regras de negócio, persistência e logs de múltiplos domínios. |
 | **MEDIUM** | Ausência de tratamento centralizado de erros | `app.py:77-78` | Blocos `try/except` genéricos espalhados com respostas HTTP inconsistentes. |
-| **LOW** | Uso de `print` para logging e imports mortos | `app.py:56`, `database.py:2` | Falta de logger estruturado e dependências não utilizadas gerando ruído cognitivo. |
+| **LOW** | Uso de `print` para logging | `app.py:56, 83-86`; `controllers.py:8, 11, 57, 106, 161, 179, 182, 208-210, 219, 248-250` | Logs sem níveis ou contexto dificultam o troubleshooting em ambiente real. |
+| **LOW** | Duplicação de validação ad-hoc | `controllers.py:28-55, 72-90` | Validações de produto repetidas em `criar_produto` e `atualizar_produto` aumentam o custo de manutenção e podem divergir. |
+| **LOW** | Imports mortos / não utilizados | `database.py:2`; `models.py:2` | Imports sem uso geram ruído cognitivo e manutenção desnecessária. |
 
 ---
 
